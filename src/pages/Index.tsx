@@ -1,6 +1,103 @@
 import { useState, useEffect, useRef } from "react";
 import Icon from "@/components/ui/icon";
 
+const RADIO_STATIONS = [
+  { name: "Jazz FM", url: "https://jazz-wr04.ice.infomaniak.ch/jazz-wr04-128.mp3" },
+  { name: "Lounge", url: "https://streaming.radio.co/s3f56a0265/listen" },
+  { name: "Classic FM", url: "https://icecast.classicfm.co.uk/classicfm" },
+  { name: "Radio Monte Carlo", url: "https://rmc1.cdnvideo.ru/rmc1" },
+];
+
+function RadioPlayer() {
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const [playing, setPlaying] = useState(false);
+  const [station, setStation] = useState(0);
+  const [volume, setVolume] = useState(0.5);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume;
+    audio.src = RADIO_STATIONS[station].url;
+    if (playing) {
+      audio.play().catch(() => setPlaying(false));
+    }
+  }, [station]);
+
+  useEffect(() => {
+    if (audioRef.current) audioRef.current.volume = volume;
+  }, [volume]);
+
+  const toggle = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (playing) {
+      audio.pause();
+      setPlaying(false);
+    } else {
+      audio.src = RADIO_STATIONS[station].url;
+      audio.play().catch(() => setPlaying(false));
+      setPlaying(true);
+    }
+  };
+
+  const changeStation = (i: number) => {
+    setStation(i);
+    setPlaying(true);
+  };
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50">
+      <audio ref={audioRef} />
+      <div className="border border-border/60 p-4 shadow-2xl"
+        style={{ background: "hsl(220, 14%, 11%)", minWidth: 240 }}>
+        {/* Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`w-1.5 h-1.5 rounded-full ${playing ? "bg-gold" : "bg-muted-foreground"}`}
+              style={playing ? { boxShadow: "0 0 6px hsl(42,70%,62%)", animation: "pulse 2s infinite" } : {}} />
+            <span className="text-xs tracking-widest uppercase text-muted-foreground">Radio</span>
+          </div>
+          <span className="text-xs text-gold font-medium">{RADIO_STATIONS[station].name}</span>
+        </div>
+
+        {/* Stations */}
+        <div className="flex gap-1 mb-3">
+          {RADIO_STATIONS.map((s, i) => (
+            <button key={i} onClick={() => changeStation(i)}
+              className="flex-1 py-1 text-[10px] tracking-wide uppercase transition-all duration-200"
+              style={{
+                background: station === i ? "hsl(42,70%,62%)" : "transparent",
+                color: station === i ? "hsl(220,15%,8%)" : "hsl(220,10%,55%)",
+                border: `1px solid ${station === i ? "hsl(42,70%,62%)" : "hsl(220,12%,18%)"}`,
+              }}>
+              {i + 1}
+            </button>
+          ))}
+        </div>
+
+        {/* Controls */}
+        <div className="flex items-center gap-3">
+          <button onClick={toggle}
+            className="w-9 h-9 flex items-center justify-center border border-gold/40 hover:border-gold transition-all duration-200"
+            style={{ color: "hsl(42,70%,62%)" }}>
+            <Icon name={playing ? "Pause" : "Play"} size={14} />
+          </button>
+          <div className="flex items-center gap-2 flex-1">
+            <Icon name="Volume2" size={12} className="text-muted-foreground flex-shrink-0" />
+            <input
+              type="range" min={0} max={1} step={0.01} value={volume}
+              onChange={e => setVolume(Number(e.target.value))}
+              className="flex-1 h-px appearance-none cursor-pointer"
+              style={{ accentColor: "hsl(42,70%,62%)", background: `linear-gradient(to right, hsl(42,70%,62%) ${volume * 100}%, hsl(220,12%,18%) ${volume * 100}%)` }}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const NAV_ITEMS = [
   { label: "Главная", href: "#home" },
   { label: "Обо мне", href: "#about" },
@@ -410,6 +507,8 @@ export default function Index() {
           </div>
         </div>
       </Section>
+
+      <RadioPlayer />
 
       {/* FOOTER */}
       <footer className="relative z-10 border-t border-border/40 py-8">
